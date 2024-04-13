@@ -1,0 +1,55 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Update APT
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - python-apt
+          - apache2
+        state: present
+
+    - name: Copy Apache Configuration
+      ansible.builtin.copy:
+        src: files/config/apache2.conf
+        dest: /etc/apache2/apache2.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy Website Index File
+      ansible.builtin.copy:
+        src: files/site/index.html
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Witchcraft That Makes This Work Somehow
+      ansible.builtin.file:
+        path: /etc/apache2/sites-enabled/{{ item }}
+        state: absent
+      loop:
+        - apache.conf
+        - apache2.conf
+
+    - name: Ensure no duplicate site configurations
+      ansible.builtin.shell: "rm -f /etc/apache2/sites-enabled/*"
+      args:
+        warn: false
+
+    - name: Enable Default Apache Configuration
+      ansible.builtin.file:
+        src: /etc/apache2/sites-available/000-default.conf
+        dest: /etc/apache2/sites-enabled/000-default.conf
+        state: link
+
+    - name: Restart Apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+

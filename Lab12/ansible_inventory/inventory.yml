@@ -1,0 +1,4 @@
+all:
+  hosts:
+    ansible_host:
+      ansible_host: 10.142.0.4
